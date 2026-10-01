@@ -1,0 +1,34 @@
+[project]
+name = "newsapp"
+version = "0.1.0"
+description = "Search Guardian news and analyse articles with OpenAI."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.20.0",
+    "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "openai>=3.22.1",
+    "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.15.0",
+    "python-multipart>=0.0.32",
+    "sqlalchemy>=2.1.1",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "python-dotenv>=1.2.4",
+    "ruff>=0.16.9",
+]
