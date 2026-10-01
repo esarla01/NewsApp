@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.clients.guardian import GuardianArticle, GuardianClient
 from app.models import Analysis, Article
-from app.schemas import AnalysisOut, ArticleResult
+from app.schemas import ArticleResult, to_result
 
 CACHE_TTL_SECONDS = 600
 
@@ -50,10 +50,5 @@ def attach_analyses(session: Session, articles: list[GuardianArticle]) -> list[A
     results = []
     for article in articles:
         analysis = analysis_by_guardian_id.get(article.guardian_id)
-        results.append(
-            ArticleResult(
-                article=article,
-                analysis=AnalysisOut.model_validate(analysis) if analysis else None,
-            )
-        )
+        results.append(to_result(article, analysis))
     return results

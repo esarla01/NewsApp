@@ -1,53 +1,14 @@
-from datetime import UTC, datetime
-
 import pytest
 from sqlalchemy import func, select
 
-from app.clients.guardian import GuardianArticle, GuardianNotFoundError
-from app.clients.openai_client import AnalysisError, ArticleAnalysis
+from app.clients.guardian import GuardianNotFoundError
+from app.clients.openai_client import AnalysisError
 from app.db import SessionLocal
 from app.models import Analysis, Article, Sentiment
 from app.services.analysis import analyse_article
+from tests.fakes import FakeGuardianClient, FakeOpenAIClient
 
 GUARDIAN_ID = "world/2026/oct/01/example"
-
-
-class FakeGuardianClient:
-    def __init__(self, error=None):
-        self.error = error
-
-    def get_article(self, guardian_id):
-        if self.error:
-            raise self.error
-        return GuardianArticle(
-            guardian_id=guardian_id,
-            web_url=f"https://www.theguardian.com/{guardian_id}",
-            headline="Example headline",
-            section_name="World news",
-            published_at=datetime(2026, 10, 1, 9, 0, tzinfo=UTC),
-            body_text="Full article text.",
-        )
-
-
-class FakeOpenAIClient:
-    """Returns a fixed analysis. `during_call` runs mid-call to simulate what happens meanwhile."""
-
-    model = "fake-model"
-
-    def __init__(self, error=None, during_call=None):
-        self.error = error
-        self.during_call = during_call
-        self.calls = 0
-
-    def analyse(self, headline, body):
-        self.calls += 1
-        if self.during_call:
-            self.during_call()
-        if self.error:
-            raise self.error
-        return ArticleAnalysis(
-            summary="A summary.", sentiment=Sentiment.NEGATIVE, rationale="Grim."
-        )
 
 
 def count(session, model) -> int:

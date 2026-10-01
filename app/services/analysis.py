@@ -1,10 +1,11 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.clients.guardian import GuardianClient
 from app.clients.openai_client import OpenAIClient
-from app.models import Analysis, Article
+from app.models import Analysis, Article, Sentiment
+from app.schemas import ArticleResult, to_result
 
 
 def find_analysis(session: Session, guardian_id: str) -> Analysis | None:
@@ -60,3 +61,24 @@ def analyse_article(
         return existing, False
 
     return analysis, True
+
+
+def list_analyses(
+    session: Session, sentiment: Sentiment | None = None, q: str | None = None
+) -> list[ArticleResult]:
+    """Stored analyses, newest first, optionally filtered by sentiment and keyword."""
+    statement = (
+        select(Article, Analysis)
+        .join(Analysis.article)
+        .order_by(Analysis.created_at.desc())
+        .limit(50)
+    )
+    if sentiment:
+        statement = statement.where(Analysis.sentiment == sentiment)
+    if q:
+        keyword = f"%{q}%"
+        statement = statement.where(
+            or_(Article.headline.ilike(keyword), Analysis.summary.ilike(keyword))
+        )
+
+    return [to_result(article, analysis) for article, analysis in session.execute(statement)]
