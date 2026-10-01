@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+  <h1>Analysed articles</h1>
+  <p>Every article analysed so far, newest first.</p>
+</header>
+
+<section>
+  <form role="search" hx-get="/partials/history" hx-target="#history" hx-trigger="input delay:300ms">
+    <input type="search" name="q" placeholder="Filter by keyword" aria-label="Filter by keyword">
+    <select name="sentiment" aria-label="Sentiment">
+      <option value="">All sentiments</option>
+      <option value="positive">Positive</option>
+      <option value="neutral">Neutral</option>
+      <option value="negative">Negative</option>
+    </select>
+  </form>
+  <div id="history">
+    {% include "partials/history.html" %}
+  </div>
+</section>
+{% endblock %}

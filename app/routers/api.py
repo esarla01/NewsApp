@@ -1,7 +1,9 @@
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
+from app.clients.guardian import OrderBy
 from app.db import SessionDep
 from app.dependencies import GuardianDep, OpenAIDep
 from app.models import Analysis, Sentiment
@@ -18,8 +20,13 @@ def search(
     session: SessionDep,
     guardian: GuardianDep,
     section: str | None = None,
+    from_date: date | None = None,
+    to_date: date | None = None,
+    order_by: OrderBy = "newest",
 ) -> list[ArticleResult]:
-    articles = search_articles(guardian, q, section)
+    if from_date and to_date and from_date > to_date:
+        raise HTTPException(status_code=422, detail="from_date must be on or before to_date")
+    articles = search_articles(guardian, q, section, from_date, to_date, order_by)
     return attach_analyses(session, articles)
 
 

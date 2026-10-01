@@ -23,7 +23,7 @@ class FakeGuardianClient:
             body_text="Full article text.",
         )
 
-    def search(self, query, section=None):
+    def search(self, query, section=None, from_date=None, to_date=None, order_by="newest"):
         return [self.get_article("world/2026/oct/01/example")]
 
 

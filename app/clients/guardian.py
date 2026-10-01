@@ -1,10 +1,13 @@
-from datetime import datetime
+from datetime import date, datetime
+from typing import Literal
 
 import httpx
 from pydantic import BaseModel
 
 BASE_URL = "https://content.guardianapis.com"
 CARD_FIELDS = "standfirst,byline,thumbnail"
+
+OrderBy = Literal["newest", "relevance"]
 
 
 class GuardianError(Exception):
@@ -36,16 +39,27 @@ class GuardianClient:
         self.api_key = api_key
         self.http = httpx.Client(base_url=BASE_URL, timeout=10, transport=transport)
 
-    def search(self, query: str, section: str | None = None) -> list[GuardianArticle]:
+    def search(
+        self,
+        query: str,
+        section: str | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        order_by: OrderBy = "newest",
+    ) -> list[GuardianArticle]:
         params = {
             "q": query,
             "type": "article",
-            "order-by": "newest",
+            "order-by": order_by,
             "show-fields": CARD_FIELDS,
             "page-size": 10,
         }
         if section:
             params["section"] = section
+        if from_date:
+            params["from-date"] = from_date.isoformat()
+        if to_date:
+            params["to-date"] = to_date.isoformat()
 
         data = self._get("/search", params)
         return [parse_article(item) for item in data["results"]]

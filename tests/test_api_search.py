@@ -16,7 +16,7 @@ class FakeGuardianClient:
         self.articles = list(articles)
         self.error = error
 
-    def search(self, query, section=None):
+    def search(self, query, section=None, from_date=None, to_date=None, order_by="newest"):
         if self.error:
             raise self.error
         return self.articles
@@ -94,3 +94,12 @@ def test_guardian_failure_returns_502(client):
     response = client.get("/api/articles/search", params={"q": "climate"})
 
     assert response.status_code == 502
+
+
+def test_from_date_after_to_date_returns_422(client):
+    response = client.get(
+        "/api/articles/search",
+        params={"q": "climate", "from_date": "2026-09-30", "to_date": "2026-09-01"},
+    )
+
+    assert response.status_code == 422

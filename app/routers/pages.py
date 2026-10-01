@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 
@@ -33,21 +34,41 @@ SECTIONS = [
 
 
 @router.get("/")
-def index(request: Request, session: SessionDep):
-    context = {"sections": SECTIONS, "history": list_analyses(session)}
-    return templates.TemplateResponse(request, "index.html", context)
+def index(request: Request):
+    return templates.TemplateResponse(request, "index.html", {"sections": SECTIONS})
+
+
+@router.get("/history")
+def history_page(request: Request, session: SessionDep):
+    return templates.TemplateResponse(request, "history.html", {"history": list_analyses(session)})
 
 
 @router.get("/partials/search")
 def search_results(
-    request: Request, session: SessionDep, guardian: GuardianDep, q: str = "", section: str = ""
+    request: Request,
+    session: SessionDep,
+    guardian: GuardianDep,
+    q: str = "",
+    section: str = "",
+    from_date: str = "",
+    to_date: str = "",
+    order_by: str = "newest",
 ):
+    # Empty date fields arrive as "", so the dates are converted here rather than by FastAPI.
+    start = date.fromisoformat(from_date) if from_date else None
+    end = date.fromisoformat(to_date) if to_date else None
+    order = "relevance" if order_by == "relevance" else "newest"
+
     if not q.strip():
         return templates.TemplateResponse(
             request, "partials/results.html", {"error": "Enter a search term."}
         )
+    if start and end and start > end:
+        return templates.TemplateResponse(
+            request, "partials/results.html", {"error": "The From date must be before the To date."}
+        )
     try:
-        articles = search_articles(guardian, q, section)
+        articles = search_articles(guardian, q, section, start, end, order)
     except GuardianError:
         return templates.TemplateResponse(
             request, "partials/results.html", {"error": "Couldn't reach the Guardian. Try again."}
@@ -71,14 +92,11 @@ def analyse(
         context = {"guardian_id": guardian_id, "error": "Couldn't analyse this article. Try again."}
         return templates.TemplateResponse(request, "partials/analysis.html", context)
 
-    response = templates.TemplateResponse(request, "partials/analysis.html", {"analysis": analysis})
-    # Tells the history list on the page to reload itself.
-    response.headers["HX-Trigger"] = "analysed"
-    return response
+    return templates.TemplateResponse(request, "partials/analysis.html", {"analysis": analysis})
 
 
 @router.get("/partials/history")
-def history(request: Request, session: SessionDep, q: str = "", sentiment: str = ""):
+def history_results(request: Request, session: SessionDep, q: str = "", sentiment: str = ""):
     # The dropdown sends "" for "All sentiments".
     selected = Sentiment(sentiment) if sentiment in Sentiment else None
     context = {"history": list_analyses(session, selected, q or None)}

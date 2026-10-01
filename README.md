@@ -9,7 +9,7 @@ Search recent Guardian articles, get an AI summary and sentiment for any of them
 - **Search** recent news by keyword, optionally within a section (World, Politics, Technology and so on). Results are newest first and exclude live blogs.
 - **Analyse** any result with one click. OpenAI (`gpt-4.1-nano`) returns a short summary, a sentiment (positive, neutral or negative) and a one-sentence rationale. The button shows a loading state until the result replaces it.
 - **No duplicate work.** Each analysis is stored. Analysing the same article again returns the stored result without calling OpenAI, and search results show existing analyses straight away.
-- **History** of every analysed article, filterable by sentiment and keyword. It refreshes by itself after each new analysis.
+- **Analysed articles** page listing every stored analysis, newest first, filterable by sentiment and keyword as you type.
 
 ## Tech stack
 

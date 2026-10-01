@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from app.clients.guardian import GuardianError
@@ -12,7 +14,7 @@ class FakeGuardianClient:
         self.calls = []
         self.error = error
 
-    def search(self, query, section=None):
+    def search(self, query, section=None, from_date=None, to_date=None, order_by="newest"):
         self.calls.append((query, section))
         if self.error:
             raise self.error
@@ -68,5 +70,14 @@ def test_failed_search_is_not_cached():
         search_articles(client, "climate")
     with pytest.raises(GuardianError):
         search_articles(client, "climate")
+
+    assert len(client.calls) == 2
+
+
+def test_different_dates_are_a_new_search():
+    client = FakeGuardianClient()
+
+    search_articles(client, "climate", from_date=date(2026, 9, 1))
+    search_articles(client, "climate", from_date=date(2026, 9, 15))
 
     assert len(client.calls) == 2

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import httpx
 import pytest
@@ -118,3 +118,16 @@ def test_get_unknown_article_raises_not_found():
 
     with pytest.raises(GuardianNotFoundError):
         client.get_article("world/does-not-exist")
+
+
+def test_search_sends_date_and_order_filters():
+    fake = FakeGuardian()
+
+    fake.client().search(
+        "climate", from_date=date(2026, 9, 1), to_date=date(2026, 9, 30), order_by="relevance"
+    )
+
+    params = fake.last_request.url.params
+    assert params["from-date"] == "2026-09-01"
+    assert params["to-date"] == "2026-09-30"
+    assert params["order-by"] == "relevance"

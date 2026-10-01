@@ -20,6 +20,7 @@
     @media (max-width: 576px) { .news-card { grid-template-columns: 1fr; } }
     html { scroll-behavior: smooth; }
     #history { max-height: 70vh; overflow-y: auto; padding-right: 0.5rem; }
+    #results { max-height: 70vh; overflow-y: auto; padding-right: 0.5rem; }
     .back-to-top { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 0.4rem 0.8rem;
                    border-radius: 50%; background: var(--pico-primary-background);
                    color: #fff; text-decoration: none; }
@@ -27,7 +28,15 @@
 </head>
 <body>
   <main class="container">
+    <nav id="top">
+      <ul><li><strong>Aries News</strong></li></ul>
+      <ul>
+        <li><a href="/" {% if request.url.path == "/" %}aria-current="page"{% endif %}>Search</a></li>
+        <li><a href="/history" {% if request.url.path == "/history" %}aria-current="page"{% endif %}>Analysed articles</a></li>
+      </ul>
+    </nav>
     {% block content %}{% endblock %}
+    <a href="#top" class="back-to-top" aria-label="Back to top">↑</a>
   </main>
   <script>
     // Show Pico's spinner (aria-busy) on the button behind each htmx request.
