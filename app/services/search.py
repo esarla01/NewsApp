@@ -17,12 +17,11 @@ _cache: dict[tuple[str, str | None], tuple[float, list[GuardianArticle]]] = {}
 def search_articles(
     client: GuardianClient, query: str, section: str | None = None
 ) -> list[GuardianArticle]:
-    
+
     # Only whitespace is normalised: the Guardian treats upper-case AND/OR/NOT as operators.
     query = " ".join(query.split())
     section = section.strip().lower() if section and section.strip() else None
     key = (query, section)
-
 
     #  Check the cache first. If the cached results are not expired (within the TTL),
     #  return the cached results. Otherwise, perform a new search and update the cache.
@@ -33,6 +32,7 @@ def search_articles(
     results = client.search(query, section)
     _cache[key] = (monotonic(), results)
     return results
+
 
 # Pair each article with its stored analysis, or None, using a single query.
 def attach_analyses(session: Session, articles: list[GuardianArticle]) -> list[ArticleResult]:

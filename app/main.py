@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.clients.guardian import GuardianError, GuardianNotFoundError, GuardianRateLimitError
+from app.clients.openai_client import AnalysisError
 from app.db import SessionDep
 from app.routers import api
 
@@ -19,6 +20,11 @@ def guardian_error(request: Request, exc: GuardianError) -> JSONResponse:
     else:
         status = 502
     return JSONResponse(status_code=status, content={"detail": str(exc)})
+
+
+@app.exception_handler(AnalysisError)
+def analysis_error(request: Request, exc: AnalysisError) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
 
 
 @app.get("/health")

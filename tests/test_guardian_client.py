@@ -3,7 +3,12 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from app.clients.guardian import GuardianClient, GuardianError, GuardianRateLimitError
+from app.clients.guardian import (
+    GuardianClient,
+    GuardianError,
+    GuardianNotFoundError,
+    GuardianRateLimitError,
+)
 
 ARTICLE = {
     "id": "world/2026/oct/01/example",
@@ -48,7 +53,6 @@ def test_search_sends_expected_params():
     assert params["type"] == "article"
     assert params["order-by"] == "newest"
     assert params["api-key"] == "test-key"
-
 
 
 def test_search_parses_articles():
@@ -96,3 +100,21 @@ def test_timeout_raises_guardian_error():
 
     with pytest.raises(GuardianError):
         client.search("climate")
+
+
+def test_get_article_requests_body_and_parses_it():
+    article_with_body = {**ARTICLE, "fields": {**ARTICLE["fields"], "bodyText": "Full text."}}
+    fake = FakeGuardian(body={"response": {"content": article_with_body}})
+
+    article = fake.client().get_article("world/2026/oct/01/example")
+
+    assert fake.last_request.url.path == "/world/2026/oct/01/example"
+    assert "bodyText" in fake.last_request.url.params["show-fields"]
+    assert article.body_text == "Full text."
+
+
+def test_get_unknown_article_raises_not_found():
+    client = FakeGuardian(status=404).client()
+
+    with pytest.raises(GuardianNotFoundError):
+        client.get_article("world/does-not-exist")
