@@ -30,6 +30,18 @@ uv run uvicorn app.main:app --reload
 
 The app runs at http://localhost:8000.
 
+## Deployment (Railway)
+
+Deploy settings live in `railway.json`. Migrations run as a pre-deploy step, so a failed migration stops the deploy and the previous version keeps running.
+
+Service variables:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (reference to the Railway Postgres service) |
+| `GUARDIAN_API_KEY` | Guardian Open Platform key |
+| `OPENAI_API_KEY` | OpenAI key |
+
 ## Tests
 
 ```bash
