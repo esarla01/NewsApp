@@ -32,3 +32,6 @@ dev = [
     "python-dotenv>=1.2.4",
     "ruff>=0.16.9",
 ]
+
+[tool.ruff.lint.isort]
+known-third-party = ["alembic"]  # the local alembic/ folder would otherwise look first-party

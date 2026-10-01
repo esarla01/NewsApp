@@ -24,6 +24,7 @@ Then run the app:
 ```bash
 cp .env.example .env      # then add your Guardian and OpenAI keys
 uv sync
+uv run alembic upgrade head   # create the tables
 uv run uvicorn app.main:app --reload
 ```
 
