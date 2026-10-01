@@ -152,7 +152,7 @@ If two requests analyse the same article at the same time, the unique constraint
 - **The cache is per process.** Running several instances would call for a shared cache such as Redis. Old cache entries are replaced but never removed, which is fine at this scale.
 - **Search shows the first 10 results only.** Pagination would be a small addition to the client and the page.
 - **There is no authentication or rate limiting on this app's own endpoints**, so anyone with the link can trigger OpenAI calls. A public version would need per-user limits.
-- **AI query understanding** (turning a question such as "good news about renewable energy this week" into structured Guardian search parameters) would plug into the existing search service, which already accepts structured parameters.
+- **AI query understanding** (turning a question such as "good news about renewable energy this week" into structured Guardian search parameters) would plug into the existing search service: every search already goes through it, so only its parameters would need extending.
 
 ## Deployment (Railway)
 
