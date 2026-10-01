@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header id="top">
+  <h1>Aries News</h1>
+  <p>Search recent Guardian articles, then get an AI summary and sentiment for any of them.</p>
+</header>
+
+<section>
+  <form role="search" hx-get="/partials/search" hx-target="#results" hx-disabled-elt="find button">
+    <input type="search" name="q" placeholder="Search the news, e.g. climate" aria-label="Search" required>
+    <select name="section" aria-label="Section">
+      <option value="">All sections</option>
+      {% for value, label in sections %}
+      <option value="{{ value }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Search</button>
+  </form>
+  <div id="results"></div>
+</section>
+
+<section>
+  <h2>Analysed articles</h2>
+  <form role="search" hx-get="/partials/history" hx-target="#history" hx-trigger="input delay:300ms">
+    <input type="search" name="q" placeholder="Filter by keyword" aria-label="Filter by keyword">
+    <select name="sentiment" aria-label="Sentiment">
+      <option value="">All sentiments</option>
+      <option value="positive">Positive</option>
+      <option value="neutral">Neutral</option>
+      <option value="negative">Negative</option>
+    </select>
+  </form>
+  {# Reloads itself (keeping the filters) whenever an article is analysed. #}
+  <div id="history" hx-get="/partials/history" hx-trigger="analysed from:body" hx-include="previous form">
+    {% include "partials/history.html" %}
+  </div>
+</section>
+
+<a href="#top" class="back-to-top" aria-label="Back to top">↑</a>
+{% endblock %}

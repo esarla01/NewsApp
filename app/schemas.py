@@ -42,10 +42,13 @@ class ArticleResult(BaseModel):
     analysis: AnalysisOut | None
 
 
+# Guardian ids look like "world/2026/oct/01/some-slug". Rejecting anything else
+# stops odd input from being sent to the Guardian as a URL path.
+GUARDIAN_ID_PATTERN = r"^[a-z0-9_-]+(/[a-z0-9_-]+)+$"
+
+
 class AnalyseRequest(BaseModel):
-    # Guardian ids look like "world/2026/oct/01/some-slug". Rejecting anything else
-    # stops odd input from being sent to the Guardian as a URL path.
-    guardian_id: str = Field(pattern=r"^[a-z0-9_-]+(/[a-z0-9_-]+)+$", max_length=300)
+    guardian_id: str = Field(pattern=GUARDIAN_ID_PATTERN, max_length=300)
 
 
 def to_result(article, analysis) -> ArticleResult:

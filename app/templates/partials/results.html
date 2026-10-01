@@ -1,0 +1,9 @@
+{% if error %}
+<p class="error">{{ error }}</p>
+{% else %}
+{% for result in results %}
+{% include "partials/article_card.html" %}
+{% else %}
+<p>No articles found. Try another search.</p>
+{% endfor %}
+{% endif %}

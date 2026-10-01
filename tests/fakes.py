@@ -23,6 +23,9 @@ class FakeGuardianClient:
             body_text="Full article text.",
         )
 
+    def search(self, query, section=None):
+        return [self.get_article("world/2026/oct/01/example")]
+
 
 class FakeOpenAIClient:
     """Returns a fixed analysis. `during_call` runs mid-call to simulate what happens meanwhile."""

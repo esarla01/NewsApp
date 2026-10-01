@@ -1,0 +1,13 @@
+{% if analysis %}
+<p><span class="badge {{ analysis.sentiment.value }}">{{ analysis.sentiment.value | capitalize }}</span></p>
+<p><strong>Summary:</strong> {{ analysis.summary }}</p>
+<p class="meta"><strong>Why:</strong> {{ analysis.rationale }}</p>
+{% else %}
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+<button name="guardian_id" value="{{ guardian_id }}"
+        hx-post="/partials/analyse" hx-target="closest .analysis-slot" hx-disabled-elt="this">
+  Analyse
+</button>
+{% endif %}

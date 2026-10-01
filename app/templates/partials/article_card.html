@@ -1,0 +1,18 @@
+{% set article = result.article %}
+{% set analysis = result.analysis %}
+{% set guardian_id = article.guardian_id %}
+<article class="news-card">
+  {% if article.thumbnail_url %}
+  <img src="{{ article.thumbnail_url }}" alt="">
+  {% endif %}
+  <div>
+    <p class="meta">{{ article.section_name }} · {{ article.published_at.strftime("%d %b %Y") }}</p>
+    <h3><a href="{{ article.web_url }}" target="_blank" rel="noopener">{{ article.headline }}</a></h3>
+    {% if article.standfirst %}
+    <p>{{ article.standfirst | striptags }}</p>
+    {% endif %}
+    <div class="analysis-slot">
+      {% include "partials/analysis.html" %}
+    </div>
+  </div>
+</article>

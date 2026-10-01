@@ -5,10 +5,11 @@ from sqlalchemy import text
 from app.clients.guardian import GuardianError, GuardianNotFoundError, GuardianRateLimitError
 from app.clients.openai_client import AnalysisError
 from app.db import SessionDep
-from app.routers import api
+from app.routers import api, pages
 
 app = FastAPI(title="Aries News")
 app.include_router(api.router)
+app.include_router(pages.router)
 
 
 @app.exception_handler(GuardianError)

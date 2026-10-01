@@ -13,7 +13,8 @@ CACHE_TTL_SECONDS = 600
 _cache: dict[tuple[str, str | None], tuple[float, list[GuardianArticle]]] = {}
 
 
-# Search the Guardian API for articles matching the query and section, using a cache to avoid repeated searches.
+# Search the Guardian API for articles matching the query and section, using a cache to
+# avoid repeated searches.
 def search_articles(
     client: GuardianClient, query: str, section: str | None = None
 ) -> list[GuardianArticle]:
