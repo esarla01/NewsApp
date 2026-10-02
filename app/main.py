@@ -14,6 +14,7 @@ app.include_router(pages.router)
 
 @app.exception_handler(GuardianError)
 def guardian_error(request: Request, exc: GuardianError) -> JSONResponse:
+    """Map Guardian failures to 429, 404 or 502. The page routes handle their own errors."""
     if isinstance(exc, GuardianRateLimitError):
         status = 429
     elif isinstance(exc, GuardianNotFoundError):
@@ -25,10 +26,12 @@ def guardian_error(request: Request, exc: GuardianError) -> JSONResponse:
 
 @app.exception_handler(AnalysisError)
 def analysis_error(request: Request, exc: AnalysisError) -> JSONResponse:
+    """Map OpenAI failures to 502."""
     return JSONResponse(status_code=502, content={"detail": str(exc)})
 
 
 @app.get("/health")
 def health(session: SessionDep) -> dict[str, str]:
+    """Liveness check for Railway. Fails if the database is unreachable."""
     session.execute(text("SELECT 1"))
     return {"status": "ok"}

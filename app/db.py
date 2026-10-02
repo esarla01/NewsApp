@@ -25,6 +25,7 @@ class Base(DeclarativeBase):
 
 
 def get_session() -> Iterator[Session]:
+    """Provide one session per request. FastAPI closes it once the response is sent."""
     with SessionLocal() as session:
         yield session
 

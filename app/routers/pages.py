@@ -43,6 +43,7 @@ def search_results(
     order_by: str = "newest",
     smart: str = "",
 ):
+    """Render the results list. Errors are shown in the partial rather than as status codes."""
     # Empty date fields arrive as "", so the dates are converted here rather than by FastAPI.
     start = date.fromisoformat(from_date) if from_date else None
     end = date.fromisoformat(to_date) if to_date else None
@@ -89,6 +90,7 @@ def analyse(
     openai: OpenAIDep,
     guardian_id: Annotated[str, Form(pattern=GUARDIAN_ID_PATTERN)],
 ):
+    """Render the analysis slot for one card, replacing its Analyse button."""
     try:
         analysis, _ = analyse_article(session, guardian, openai, guardian_id)
     except (GuardianError, AnalysisError):
@@ -100,6 +102,7 @@ def analyse(
 
 @router.get("/partials/history")
 def history_results(request: Request, session: SessionDep, q: str = "", sentiment: str = ""):
+    """Render the filtered analyses list as the user types."""
     # The dropdown sends "" for "All sentiments".
     selected = Sentiment(sentiment) if sentiment in Sentiment else None
     context = {"history": list_analyses(session, selected, q or None)}

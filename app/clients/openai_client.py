@@ -47,11 +47,14 @@ class SearchQuestion(BaseModel):
 
 
 class OpenAIClient:
+    """Wraps the OpenAI Responses API. Every reply is parsed into a Pydantic schema."""
+
     def __init__(self, api_key: str, model: str) -> None:
         self.model = model
         self._client = OpenAI(api_key=api_key, timeout=30.0, max_retries=1)
 
     def analyse(self, headline: str, body: str) -> ArticleAnalysis:
+        """Summarise an article and classify its sentiment."""
         try:
             response = self._client.responses.parse(
                 model=self.model,
@@ -67,6 +70,7 @@ class OpenAIClient:
         return response.output_parsed
 
     def interpret_question(self, question: str) -> SearchQuestion:
+        """Convert a plain-English question into structured search filters."""
         try:
             response = self._client.responses.parse(
                 model=self.model,

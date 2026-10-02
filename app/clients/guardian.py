@@ -48,7 +48,10 @@ class GuardianArticle(BaseModel):
 
 
 class GuardianClient:
+    """Thin wrapper around the Guardian Content API."""
+
     def __init__(self, api_key: str, transport: httpx.BaseTransport | None = None):
+        # transport lets tests substitute httpx.MockTransport for the network.
         self.api_key = api_key
         self.http = httpx.Client(base_url=BASE_URL, timeout=10, transport=transport)
 
@@ -60,6 +63,7 @@ class GuardianClient:
         to_date: date | None = None,
         order_by: OrderBy = "newest",
     ) -> list[GuardianArticle]:
+        """Return up to 10 articles with card fields only. Body text is fetched on analysis."""
         params = {
             "q": query,
             "type": "article",
@@ -83,6 +87,7 @@ class GuardianClient:
         return parse_article(data["content"])
 
     def _get(self, path: str, params: dict) -> dict:
+        """Send an authenticated GET and map HTTP failures to GuardianError subclasses."""
         params["api-key"] = self.api_key
         try:
             response = self.http.get(path, params=params)

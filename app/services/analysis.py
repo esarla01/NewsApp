@@ -19,14 +19,14 @@ def analyse_article(
 ) -> tuple[Analysis, bool]:
     """Return the article's analysis and whether it was newly created.
 
-    An existing analysis is returned without calling OpenAI. Nothing is saved
-    unless both the Guardian and OpenAI calls succeed.
+    Idempotent: an existing analysis is returned without calling OpenAI. Nothing is
+    saved unless both the Guardian and OpenAI calls succeed.
     """
     existing = find_analysis(session, guardian_id)
     if existing:
         return existing, False
 
-    # End the read transaction so no database connection is held during the slow API calls.
+    # End the read transaction so no connection is held during the slow API calls.
     session.rollback()
 
     article = guardian.get_article(guardian_id)
@@ -53,7 +53,7 @@ def analyse_article(
     try:
         session.commit()
     except IntegrityError:
-        # Another request saved this article while we were waiting on OpenAI: use theirs.
+        # A concurrent request saved this article first, so return its analysis instead.
         session.rollback()
         existing = find_analysis(session, guardian_id)
         if existing is None:

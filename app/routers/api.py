@@ -24,6 +24,7 @@ def search(
     to_date: date | None = None,
     order_by: OrderBy = "newest",
 ) -> list[ArticleResult]:
+    """Search the Guardian. Each result includes its stored analysis, or null."""
     if from_date and to_date and from_date > to_date:
         raise HTTPException(status_code=422, detail="from_date must be on or before to_date")
     articles = search_articles(guardian, q, section, from_date, to_date, order_by)
@@ -37,6 +38,7 @@ def smart_search(
     guardian: GuardianDep,
     openai: OpenAIDep,
 ) -> SmartSearchResult:
+    """Search with a plain-English question. Returns the interpreted filters with the results."""
     interpreted = interpret_question(openai, q, date.today())
     articles = search_articles(
         guardian,
@@ -56,6 +58,7 @@ def create_analysis(
     guardian: GuardianDep,
     openai: OpenAIDep,
 ) -> ArticleResult:
+    """Analyse an article. Returns 201 if newly analysed, 200 if it already existed."""
     analysis, created = analyse_article(session, guardian, openai, body.guardian_id)
     response.status_code = 201 if created else 200
     return to_result(analysis.article, analysis)
@@ -65,11 +68,13 @@ def create_analysis(
 def get_analyses(
     session: SessionDep, sentiment: Sentiment | None = None, q: str | None = None
 ) -> list[ArticleResult]:
+    """List stored analyses, newest first, filtered by sentiment and keyword."""
     return list_analyses(session, sentiment, q)
 
 
 @router.get("/analyses/{analysis_id}")
 def get_analysis(analysis_id: int, session: SessionDep) -> ArticleResult:
+    """Fetch one stored analysis with its article."""
     analysis = session.get(Analysis, analysis_id)
     if analysis is None:
         raise HTTPException(status_code=404, detail="Analysis not found")

@@ -19,8 +19,6 @@ TIME_PERIOD_DAYS = {"today": 0, "this_week": 7, "this_month": 30}
 _cache: dict[tuple, tuple[float, list[GuardianArticle]]] = {}
 
 
-# Search the Guardian API for articles matching the query and section, using a cache to
-# avoid repeated searches.
 def search_articles(
     client: GuardianClient,
     query: str,
@@ -29,14 +27,12 @@ def search_articles(
     to_date: date | None = None,
     order_by: OrderBy = "newest",
 ) -> list[GuardianArticle]:
-
+    """Search the Guardian, serving repeat searches from a 10-minute cache."""
     # Only whitespace is normalised: the Guardian treats upper-case AND/OR/NOT as operators.
     query = " ".join(query.split())
     section = section.strip().lower() if section and section.strip() else None
     key = (query, section, from_date, to_date, order_by)
 
-    #  Check the cache first. If the cached results are not expired (within the TTL),
-    #  return the cached results. Otherwise, perform a new search and update the cache.
     cached = _cache.get(key)
     if cached and monotonic() - cached[0] < CACHE_TTL_SECONDS:
         return cached[1]
@@ -46,12 +42,14 @@ def search_articles(
     return results
 
 
-# Pair each article with its stored analysis, or None, using a single query.
 def attach_analyses(session: Session, articles: list[GuardianArticle]) -> list[ArticleResult]:
+    """Pair each article with its stored analysis, or None.
 
+    Runs on every request, even for cached searches, so analysis status is never stale.
+    """
     guardian_ids = [article.guardian_id for article in articles]
 
-    # One query for the whole page: (guardian_id, Analysis) for every analysed article.
+    # A single IN query for the whole page avoids one query per article.
     rows = session.execute(
         select(Article.guardian_id, Analysis)
         .join(Analysis.article)
@@ -67,10 +65,10 @@ def attach_analyses(session: Session, articles: list[GuardianArticle]) -> list[A
 
 
 def interpret_question(openai: OpenAIClient, question: str, today: date) -> InterpretedSearch:
-    """Turn a plain-English question into search filters.
+    """Turn a plain-English question into validated search filters.
 
-    Anything the AI returns that we can't use is dropped, and if OpenAI fails the
-    question is searched as plain keywords.
+    Unusable values from the model are dropped, and if OpenAI fails the question is
+    searched as plain keywords, so smart search degrades to a normal search.
     """
     try:
         answer = openai.interpret_question(question)

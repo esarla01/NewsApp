@@ -1,3 +1,5 @@
+{# A card's analysis slot: the result if analysed, otherwise the Analyse button.
+   POST /partials/analyse returns this partial to replace the slot. #}
 {% if analysis %}
 <p><span class="badge {{ analysis.sentiment.value }}">{{ analysis.sentiment.value | capitalize }}</span></p>
 <p><strong>Summary:</strong> {{ analysis.summary }}</p>

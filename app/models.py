@@ -14,17 +14,19 @@ class Sentiment(enum.StrEnum):
 
 
 class Article(Base):
+    """A Guardian article. Only stored once it has been analysed."""
+
     __tablename__ = "articles"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     guardian_id: Mapped[str] = mapped_column(unique=True)
-    web_url: Mapped[str] = mapped_column(Text)  # the URL of the article on the Guardian website
+    web_url: Mapped[str] = mapped_column(Text)
     headline: Mapped[str] = mapped_column(Text)
-    standfirst: Mapped[str | None] = mapped_column(Text)  # short subtitle or summary of the article
+    standfirst: Mapped[str | None] = mapped_column(Text)  # the Guardian's subheading
     body_text: Mapped[str | None] = mapped_column(Text)
     section_name: Mapped[str]
-    byline: Mapped[str | None] = mapped_column(Text)  # the author of the article
-    thumbnail_url: Mapped[str | None] = mapped_column(Text)  # image URL for the article thumbnail
+    byline: Mapped[str | None] = mapped_column(Text)  # author credit
+    thumbnail_url: Mapped[str | None] = mapped_column(Text)
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -34,6 +36,8 @@ class Article(Base):
 
 
 class Analysis(Base):
+    """The AI summary and sentiment for one article. The unique article_id keeps it one-to-one."""
+
     __tablename__ = "analyses"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -42,8 +46,8 @@ class Analysis(Base):
     )
     summary: Mapped[str] = mapped_column(Text)
 
-    # Claude suggestion: Stored as VARCHAR + CHECK rather than a native Postgres enum, which
-    # is awkward to alter. This allows us to add new values without having to run a migration.
+    # VARCHAR + CHECK rather than a native Postgres enum: a CHECK constraint is simple to
+    # replace in a migration, whereas enum types are awkward to alter.
     sentiment: Mapped[Sentiment] = mapped_column(
         Enum(
             Sentiment,
