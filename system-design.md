@@ -90,7 +90,7 @@ Justification:
 
 ## Stretch goals
 
-1. **AI query understanding:** One OpenAI call converts a natural-language question into structured Guardian search parameters (keywords, section, date range, ordering). The output is validated against known values, falls back to a plain keyword search if it fails, and the interpreted query is shown to the user. The search service accepts structured parameters from the start, so this plugs in without other changes.  
+1. **AI query understanding (implemented, see the section at the end):** One OpenAI call converts a natural-language question into structured Guardian search parameters (keywords, section, date range, ordering). The output is validated against known values, falls back to a plain keyword search if it fails, and the interpreted query is shown to the user. The search service accepts structured parameters from the start, so this plugs in without other changes.  
 2. **Agentic search:** The model is given tools to search the Guardian and read articles, refines its query over several steps, and selects the most relevant articles or writes a short briefing. Kept as future work because it adds latency and cost, is less reliable on gpt-4.1-nano, and is harder to modify by hand.
 
 ## Changes during implementation
@@ -98,4 +98,27 @@ Justification:
 1. **Synchronous instead of async.** Endpoints are plain functions that FastAPI runs in its thread pool, with sync database and API clients. At this traffic it behaves the same as async and is simpler to read and debug.  
 2. **One path for the article text.** Searches request only the fields the cards need, and the full text is fetched from the Guardian only when an article is analysed. This replaces “from the Guardian, or from the search cache”, which would have made every search fetch full article bodies.  
 3. **The read transaction is ended before the API calls.** The existing-analysis check opens a database transaction, so it is explicitly closed before the Guardian and OpenAI calls. That keeps the rule that no transaction is open during the OpenAI call.  
-4. **The stretch goal needs the search service extended.** It currently accepts a keyword and a section. Query understanding would add date range and ordering to it, which is still the only place that would need to change.
+4. **The search service was extended for the stretch goal.** It first accepted only a keyword and a section. Date range and ordering were added to it, and to the Guardian client, so both normal search and smart search use the same function. The new filters are also offered as From, To and Sort by fields on normal search.
+
+## Stretch goal 1: AI query understanding (implemented)
+
+### What the user sees
+
+The search page has a "Smart search (AI)" switch under the search bar. With it on, the user can type a question such as "good news about renewable energy this week" instead of keywords. Above the results, the page shows how the question was understood (keywords, section, time period and sort order), so the user can see why they got those results.
+
+### Request flow
+
+1. The page sends the question to GET /partials/search with smart=on. The JSON API has its own endpoint, GET /api/articles/smart-search?q=.
+2. interpret\_question (services/search.py) sends the question to OpenAI (Responses API, gpt-4.1-nano) in one call. The prompt lists the allowed sections, and the reply must match a fixed schema validated with Pydantic:
+   - keywords: a short search phrase
+   - section: one of the known sections, or null
+   - time\_period: any, today, this\_week or this\_month
+   - order\_by: newest or relevance
+3. The code checks and converts the reply. A section that is not in the known list is dropped. The time period becomes a from\_date (today minus 0, 7 or 30 days). Empty keywords fall back to the original question.
+4. The resulting filters go into the same search\_articles function as a normal search. Caching, the Guardian call and attaching stored analyses work exactly as before.
+5. The response contains the interpreted filters and the results, which the page shows above the result cards.
+
+### Failure handling
+
+If OpenAI fails, times out or returns something that does not match the schema, the question is searched as plain keywords with no filters. Smart search never fails because of OpenAI. It just behaves like a normal search.
+
