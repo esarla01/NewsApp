@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.clients.guardian import OrderBy
 from app.models import Sentiment
 
 
@@ -45,6 +46,20 @@ class ArticleResult(BaseModel):
 # Guardian ids look like "world/2026/oct/01/some-slug". Rejecting anything else
 # stops odd input from being sent to the Guardian as a URL path.
 GUARDIAN_ID_PATTERN = r"^[a-z0-9_-]+(/[a-z0-9_-]+)+$"
+
+
+class InterpretedSearch(BaseModel):
+    """The search filters that smart search worked out from a question."""
+
+    keywords: str
+    section: str | None
+    from_date: date | None
+    order_by: OrderBy
+
+
+class SmartSearchResult(BaseModel):
+    interpreted: InterpretedSearch
+    results: list[ArticleResult]
 
 
 class AnalyseRequest(BaseModel):

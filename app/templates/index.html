@@ -20,7 +20,7 @@
         Section
         <select name="section">
           <option value="">All sections</option>
-          {% for value, label in sections %}
+          {% for value, label in sections.items() %}
           <option value="{{ value }}">{{ label }}</option>
           {% endfor %}
         </select>
@@ -35,6 +35,11 @@
         </select>
       </label>
     </div>
+    <label>
+      <input type="checkbox" name="smart" role="switch">
+      Smart search (AI): ask in plain English, e.g. "good news about renewable energy this week".
+      The AI chooses the filters.
+    </label>
   </form>
   <div id="results"></div>
 </section>

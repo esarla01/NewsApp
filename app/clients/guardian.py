@@ -9,6 +9,19 @@ CARD_FIELDS = "standfirst,byline,thumbnail"
 
 OrderBy = Literal["newest", "relevance"]
 
+# Guardian section ids and their display names, used by the dropdown and by smart search.
+SECTIONS = {
+    "world": "World",
+    "uk-news": "UK",
+    "politics": "Politics",
+    "business": "Business",
+    "technology": "Technology",
+    "environment": "Environment",
+    "science": "Science",
+    "sport": "Sport",
+    "culture": "Culture",
+}
+
 
 class GuardianError(Exception):
     """The Guardian API failed or could not be reached."""

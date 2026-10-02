@@ -92,3 +92,15 @@ def test_unknown_analysis_returns_404(client, session):
     response = client.get("/api/analyses/999")
 
     assert response.status_code == 404
+
+
+def test_smart_search_returns_interpretation_and_results(client, session):
+    use_fakes(FakeOpenAIClient())
+
+    response = client.get("/api/articles/smart-search", params={"q": "renewables this week"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["interpreted"]["keywords"] == "renewable energy"
+    assert body["interpreted"]["section"] == "environment"
+    assert len(body["results"]) == 1

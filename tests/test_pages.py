@@ -69,3 +69,13 @@ def test_search_with_dates_the_wrong_way_round_shows_error(client):
     )
 
     assert "must be before the To date" in response.text
+
+
+def test_smart_search_shows_how_the_question_was_understood(client, session):
+    use_fakes(FakeOpenAIClient())
+
+    response = client.get("/partials/search", params={"q": "renewables this week", "smart": "on"})
+
+    assert "Smart search looked for" in response.text
+    assert "renewable energy" in response.text
+    assert "Environment" in response.text

@@ -7,6 +7,7 @@ Search recent Guardian articles, get an AI summary and sentiment for any of them
 ## Features
 
 - **Search** recent news by keyword, optionally within a section (World, Politics, Technology and so on). Results are newest first and exclude live blogs.
+- **Smart search (AI).** Ask in plain English, such as "good news about renewable energy this week". One OpenAI call turns the question into keywords, a section, a time period and a sort order, and the page shows how the question was understood. If OpenAI fails, the question is searched as plain keywords.
 - **Analyse** any result with one click. OpenAI (`gpt-4.1-nano`) returns a short summary, a sentiment (positive, neutral or negative) and a one-sentence rationale. The button shows a loading state until the result replaces it.
 - **No duplicate work.** Each analysis is stored. Analysing the same article again returns the stored result without calling OpenAI, and search results show existing analyses straight away.
 - **Analysed articles** page listing every stored analysis, newest first, filterable by sentiment and keyword as you type.
@@ -87,12 +88,13 @@ Requests flow in one direction: **routers** handle HTTP, **services** hold the l
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `GET` | `/api/articles/search?q=&section=` | Search the Guardian. Each result includes its stored analysis, or `null`. |
+| `GET` | `/api/articles/search?q=&section=&from_date=&to_date=&order_by=` | Search the Guardian. Each result includes its stored analysis, or `null`. |
+| `GET` | `/api/articles/smart-search?q=` | Smart search: returns the interpreted filters and the results. |
 | `POST` | `/api/analyses` | Analyse an article by `guardian_id`. Returns `201` if new, `200` if it already existed. |
 | `GET` | `/api/analyses?sentiment=&q=` | Stored analyses, newest first, filterable by sentiment and keyword. |
 | `GET` | `/api/analyses/{id}` | One stored analysis. |
 
-Every endpoint returns the same shape, an article with its analysis:
+Every result has the same shape, an article with its analysis:
 
 ```bash
 curl -X POST localhost:8000/api/analyses \
@@ -144,6 +146,7 @@ If two requests analyse the same article at the same time, the unique constraint
 - **Article text is truncated to 12,000 characters** before it is sent to OpenAI, to keep latency and cost predictable.
 - **Synchronous endpoints.** FastAPI runs each request in its thread pool, so a slow OpenAI call does not block other users. At this scale that is simpler than async and behaves the same.
 - **Server-rendered HTML with htmx** instead of a JavaScript framework. There is one deployable with no build step, and the pages reuse the same services as the API. Errors are shown inside the page rather than as failed requests.
+- **Smart search picks a time period, and code turns it into dates.** gpt-4.1-nano was unreliable at date arithmetic ("since Monday" came back as the wrong day), so the model chooses from `today`, `this_week`, `this_month` or `any`, and Python works out the date. Sections are checked against the known list, and anything unusable is dropped.
 - **Migrations run as a Railway pre-deploy step.** If a migration fails, the deploy stops and the previous version keeps running.
 
 ## Limitations and next steps
@@ -152,7 +155,6 @@ If two requests analyse the same article at the same time, the unique constraint
 - **The cache is per process.** Running several instances would call for a shared cache such as Redis. Old cache entries are replaced but never removed, which is fine at this scale.
 - **Search shows the first 10 results only.** Pagination would be a small addition to the client and the page.
 - **There is no authentication or rate limiting on this app's own endpoints**, so anyone with the link can trigger OpenAI calls. A public version would need per-user limits.
-- **AI query understanding** (turning a question such as "good news about renewable energy this week" into structured Guardian search parameters) would plug into the existing search service: every search already goes through it, so only its parameters would need extending.
 
 ## Deployment (Railway)
 

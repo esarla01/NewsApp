@@ -9,6 +9,7 @@ from app.clients.openai_client import (
     AnalysisError,
     ArticleAnalysis,
     OpenAIClient,
+    SearchQuestion,
 )
 from app.models import Sentiment
 
@@ -56,3 +57,15 @@ def test_missing_analysis_raises_analysis_error(monkeypatch):
 
     with pytest.raises(AnalysisError):
         client.analyse("Headline", "Body")
+
+
+def test_interpret_question_returns_parsed_question(monkeypatch):
+    question = SearchQuestion(
+        keywords="renewable energy",
+        section="environment",
+        time_period="this_week",
+        order_by="newest",
+    )
+    client = make_client(monkeypatch, lambda **kwargs: SimpleNamespace(output_parsed=question))
+
+    assert client.interpret_question("good news about renewables this week") == question

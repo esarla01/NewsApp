@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from app.clients.guardian import GuardianArticle
-from app.clients.openai_client import ArticleAnalysis
+from app.clients.openai_client import ArticleAnalysis, SearchQuestion
 from app.models import Sentiment
 
 
@@ -45,4 +45,14 @@ class FakeOpenAIClient:
             raise self.error
         return ArticleAnalysis(
             summary="A summary.", sentiment=Sentiment.NEGATIVE, rationale="Grim."
+        )
+
+    def interpret_question(self, question):
+        if self.error:
+            raise self.error
+        return SearchQuestion(
+            keywords="renewable energy",
+            section="environment",
+            time_period="this_week",
+            order_by="newest",
         )

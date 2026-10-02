@@ -1,6 +1,9 @@
+from typing import Literal
+
 from openai import OpenAI, OpenAIError
 from pydantic import BaseModel, ValidationError
 
+from app.clients.guardian import SECTIONS, OrderBy
 from app.models import Sentiment
 
 # Keeps latency and cost predictable (roughly 3,000 tokens).
@@ -10,6 +13,16 @@ INSTRUCTIONS = """You analyse news articles. Given a headline and the article te
 - summary: a neutral two to three sentence summary of the article.
 - sentiment: the overall tone of the article, either positive, neutral or negative.
 - rationale: one sentence explaining why you chose that sentiment."""
+
+INTERPRET_INSTRUCTIONS = """You turn a reader's question into a Guardian news search. Return:
+- keywords: a short search phrase of one to five words, not a list. Leave out words about
+  time, mood or section, and generic words such as news, latest, articles or happened.
+- section: one of {sections}. Only set it when the question clearly names that area,
+  otherwise null.
+- time_period: "today", "this_week" (also "since Monday", "recent", "lately") or
+  "this_month" if the question mentions a recent time period, otherwise "any".
+- order_by: "newest", unless the question explicitly asks for the best, top or most
+  relevant matches, then "relevance"."""
 
 
 class AnalysisError(Exception):
@@ -22,6 +35,15 @@ class ArticleAnalysis(BaseModel):
     summary: str
     sentiment: Sentiment
     rationale: str
+
+
+class SearchQuestion(BaseModel):
+    """The exact JSON shape OpenAI must return when interpreting a search question."""
+
+    keywords: str
+    section: str | None
+    time_period: Literal["any", "today", "this_week", "this_month"]
+    order_by: OrderBy
 
 
 class OpenAIClient:
@@ -42,4 +64,19 @@ class OpenAIClient:
 
         if response.output_parsed is None:
             raise AnalysisError("OpenAI did not return an analysis")
+        return response.output_parsed
+
+    def interpret_question(self, question: str) -> SearchQuestion:
+        try:
+            response = self._client.responses.parse(
+                model=self.model,
+                instructions=INTERPRET_INSTRUCTIONS.format(sections=", ".join(SECTIONS)),
+                input=question,
+                text_format=SearchQuestion,
+            )
+        except (OpenAIError, ValidationError) as exc:
+            raise AnalysisError("OpenAI request failed") from exc
+
+        if response.output_parsed is None:
+            raise AnalysisError("OpenAI did not return a search query")
         return response.output_parsed

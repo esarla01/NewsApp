@@ -7,9 +7,9 @@ from app.clients.guardian import OrderBy
 from app.db import SessionDep
 from app.dependencies import GuardianDep, OpenAIDep
 from app.models import Analysis, Sentiment
-from app.schemas import AnalyseRequest, ArticleResult, to_result
+from app.schemas import AnalyseRequest, ArticleResult, SmartSearchResult, to_result
 from app.services.analysis import analyse_article, list_analyses
-from app.services.search import attach_analyses, search_articles
+from app.services.search import attach_analyses, interpret_question, search_articles
 
 router = APIRouter(prefix="/api")
 
@@ -28,6 +28,24 @@ def search(
         raise HTTPException(status_code=422, detail="from_date must be on or before to_date")
     articles = search_articles(guardian, q, section, from_date, to_date, order_by)
     return attach_analyses(session, articles)
+
+
+@router.get("/articles/smart-search")
+def smart_search(
+    q: Annotated[str, Query(min_length=1)],
+    session: SessionDep,
+    guardian: GuardianDep,
+    openai: OpenAIDep,
+) -> SmartSearchResult:
+    interpreted = interpret_question(openai, q, date.today())
+    articles = search_articles(
+        guardian,
+        interpreted.keywords,
+        interpreted.section,
+        from_date=interpreted.from_date,
+        order_by=interpreted.order_by,
+    )
+    return SmartSearchResult(interpreted=interpreted, results=attach_analyses(session, articles))
 
 
 @router.post("/analyses")

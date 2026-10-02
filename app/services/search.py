@@ -1,14 +1,18 @@
-from datetime import date
+from datetime import date, timedelta
 from time import monotonic
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.clients.guardian import GuardianArticle, GuardianClient, OrderBy
+from app.clients.guardian import SECTIONS, GuardianArticle, GuardianClient, OrderBy
+from app.clients.openai_client import AnalysisError, OpenAIClient
 from app.models import Analysis, Article
-from app.schemas import ArticleResult, to_result
+from app.schemas import ArticleResult, InterpretedSearch, to_result
 
 CACHE_TTL_SECONDS = 600
+
+# How far back each time period the AI can choose reaches.
+TIME_PERIOD_DAYS = {"today": 0, "this_week": 7, "this_month": 30}
 
 # (query, section, from_date, to_date, order_by) -> (time stored, results).
 # In memory is enough at this scale.
@@ -60,3 +64,23 @@ def attach_analyses(session: Session, articles: list[GuardianArticle]) -> list[A
         analysis = analysis_by_guardian_id.get(article.guardian_id)
         results.append(to_result(article, analysis))
     return results
+
+
+def interpret_question(openai: OpenAIClient, question: str, today: date) -> InterpretedSearch:
+    """Turn a plain-English question into search filters.
+
+    Anything the AI returns that we can't use is dropped, and if OpenAI fails the
+    question is searched as plain keywords.
+    """
+    try:
+        answer = openai.interpret_question(question)
+    except AnalysisError:
+        return InterpretedSearch(keywords=question, section=None, from_date=None, order_by="newest")
+
+    days = TIME_PERIOD_DAYS.get(answer.time_period)
+    return InterpretedSearch(
+        keywords=answer.keywords.strip() or question,
+        section=answer.section if answer.section in SECTIONS else None,
+        from_date=today - timedelta(days=days) if days is not None else None,
+        order_by=answer.order_by,
+    )

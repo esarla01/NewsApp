@@ -1,3 +1,11 @@
+{% if interpreted %}
+<p class="meta">
+  Smart search looked for <strong>{{ interpreted.keywords }}</strong>
+  {%- if interpreted.section %} in {{ sections[interpreted.section] }}{% endif %}
+  {%- if interpreted.from_date %}, since {{ interpreted.from_date.strftime("%d %b %Y") }}{% endif %},
+  {{ "most relevant" if interpreted.order_by == "relevance" else "newest" }} first.
+</p>
+{% endif %}
 {% if error %}
 <p class="error">{{ error }}</p>
 {% else %}

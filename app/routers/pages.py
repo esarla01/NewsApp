@@ -6,31 +6,18 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from app.clients.guardian import GuardianError
+from app.clients.guardian import SECTIONS, GuardianError
 from app.clients.openai_client import AnalysisError
 from app.db import SessionDep
 from app.dependencies import GuardianDep, OpenAIDep
 from app.models import Sentiment
 from app.schemas import GUARDIAN_ID_PATTERN
 from app.services.analysis import analyse_article, list_analyses
-from app.services.search import attach_analyses, search_articles
+from app.services.search import attach_analyses, interpret_question, search_articles
 
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 router = APIRouter(default_response_class=HTMLResponse)
-
-# Guardian section ids and the names shown in the dropdown.
-SECTIONS = [
-    ("world", "World"),
-    ("uk-news", "UK"),
-    ("politics", "Politics"),
-    ("business", "Business"),
-    ("technology", "Technology"),
-    ("environment", "Environment"),
-    ("science", "Science"),
-    ("sport", "Sport"),
-    ("culture", "Culture"),
-]
 
 
 @router.get("/")
@@ -48,11 +35,13 @@ def search_results(
     request: Request,
     session: SessionDep,
     guardian: GuardianDep,
+    openai: OpenAIDep,
     q: str = "",
     section: str = "",
     from_date: str = "",
     to_date: str = "",
     order_by: str = "newest",
+    smart: str = "",
 ):
     # Empty date fields arrive as "", so the dates are converted here rather than by FastAPI.
     start = date.fromisoformat(from_date) if from_date else None
@@ -63,6 +52,16 @@ def search_results(
         return templates.TemplateResponse(
             request, "partials/results.html", {"error": "Enter a search term."}
         )
+    # Smart search replaces the filters with the ones the AI worked out from the question.
+    interpreted = None
+    if smart:
+        interpreted = interpret_question(openai, q, date.today())
+        q = interpreted.keywords
+        section = interpreted.section
+        start = interpreted.from_date
+        end = None
+        order = interpreted.order_by
+
     if start and end and start > end:
         return templates.TemplateResponse(
             request, "partials/results.html", {"error": "The From date must be before the To date."}
@@ -74,8 +73,12 @@ def search_results(
             request, "partials/results.html", {"error": "Couldn't reach the Guardian. Try again."}
         )
 
-    results = attach_analyses(session, articles)
-    return templates.TemplateResponse(request, "partials/results.html", {"results": results})
+    context = {
+        "results": attach_analyses(session, articles),
+        "interpreted": interpreted,
+        "sections": SECTIONS,
+    }
+    return templates.TemplateResponse(request, "partials/results.html", context)
 
 
 @router.post("/partials/analyse")
